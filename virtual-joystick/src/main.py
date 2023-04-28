@@ -1,16 +1,3 @@
-# Copyright (c) farm-ng, inc.
-#
-# Licensed under the Amiga Development Kit License (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://github.com/farm-ng/amiga-dev-kit/blob/main/LICENSE
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 import argparse
 import asyncio
 import os
@@ -119,7 +106,6 @@ class VirtualJoystickApp(App):
 
     async def stream_canbus(self, client: CanbusClient) -> None:
         """This task:
-
         - listens to the canbus client's stream
         - filters for AmigaTpdo1 messages
         - extracts useful values from AmigaTpdo1 messages
@@ -165,6 +151,7 @@ class VirtualJoystickApp(App):
             for proto in response.messages.messages:
                 amiga_tpdo1: Optional[AmigaTpdo1] = parse_amiga_tpdo1_proto(proto)
                 if amiga_tpdo1:
+                    print(f"Received AmigaTpdo1 message: {amiga_tpdo1}")
                     # Store the value for possible other uses
                     self.amiga_tpdo1 = amiga_tpdo1
 
@@ -241,6 +228,7 @@ class VirtualJoystickApp(App):
         messages on the CAN bus to control the Amiga robot."""
         while self.root is None:
             await asyncio.sleep(0.01)
+            print("Waiting for application to initialize...")
 
         response_stream = None
         while True:
@@ -265,8 +253,9 @@ class VirtualJoystickApp(App):
                 async for response in response_stream:
                     # Sit in this loop and wait until canbus service reports back it is not sending
                     assert response.success
+                    print(f"CAN message sent successfully: {response.success}")
             except Exception as e:
-                print(e)
+                print(f"Exception during sending CAN message: {e}")
                 response_stream.cancel()
                 response_stream = None
                 continue
@@ -286,6 +275,7 @@ class VirtualJoystickApp(App):
                 cmd_speed=self.max_speed * joystick.joystick_pose.y,
                 cmd_ang_rate=self.max_angular_rate * -joystick.joystick_pose.x,
             )
+            print(f"Sending AmigaRpdo1 message: {msg}")
             yield canbus_pb2.SendCanbusMessageRequest(message=msg)
             await asyncio.sleep(period)
 
